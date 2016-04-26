@@ -1,0 +1,203 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+An element providing a solution to no problem in particular.
+
+Example:
+
+    <things-video-pip></things-video-pip>
+
+Example:
+
+    <things-video-pip>
+      <h2>Hello things-video-pip</h2>
+    </things-video-pip>
+
+@demo demo/index-video-pip.html
+@hero hero.svg
+-->
+
+<dom-module id="things-video-pip">
+  <template>
+    <style>
+      :host {
+        @apply(--things-pip)
+      }
+      ::shadow [pip] {
+        @apply(--things-pip-pip)
+      }
+      ::shadow [main] {
+        @apply(--things-pip-main)
+      }
+    </style>
+
+    <content select="[main]"></content>
+    <content select="[pip]"></content>
+
+  </template>
+
+  <script>
+    var EVENTS = ['play', 'pause', 'seeked']
+
+    var requestAnimFrame = (function( window ) {
+      var suffix = "equestAnimationFrame",
+        rAF = [ "r", "webkitR", "mozR", "msR", "oR" ].filter(function( val ) {
+          return val + suffix in window;
+        })[ 0 ] + suffix;
+
+      return window[ rAF ] || function( callback, element ) {
+        window.setTimeout(function() {
+          callback( +new Date() );
+        }, 1000 / 60);
+      };
+    })( window );
+
+    Polymer({
+      is: 'things-video-pip',
+
+      properties: {
+      },
+
+      listeners: {
+        "click": "_onClick"
+      },
+
+      attached: function() {
+        var main = this.querySelector('[main]')
+        var pip = this.querySelector('[pip]')
+
+        main.removeAttribute('controls');
+        pip.removeAttribute('controls');
+
+        var self = this;
+        self.__handlers = {};
+        EVENTS.forEach(function(event) {
+          self.__handlers[event] = self['_on' + event.charAt(0).toUpperCase() + event.slice(1)].bind(self)
+          main.addEventListener(event, self.__handlers[event])
+        })
+
+        this.__handlers['canplay'] = this._onCanplay.bind(this)
+        main.addEventListener('canplay', this.__handlers.canplay)
+        pip.addEventListener('canplay', this.__handlers.canplay)
+      },
+
+      detached: function() {
+        var main = this.querySelector('[main]')
+        var pip = this.querySelector('[pip]')
+
+        var self = this;
+        EVENTS.forEach(function(event) {
+          main.removeEventListener(event, self.__handlers[event])
+        })
+
+        main.removeEventListener('canplay', this.__handlers.canplay)
+        pip.removeEventListener('canplay', this.__handlers.canplay)
+
+        delete this.__handlers
+      },
+
+      _sync: function() {
+
+        var main = this.querySelector('[main]')
+        var pip = this.querySelector('[pip]')
+
+        function play() {
+          if(pip.currentTime != main.currentTime)
+            pip.currentTime = main.currentTime
+
+          if(!main.paused)
+            requestAnimFrame(play)
+        }
+
+        requestAnimFrame(function() {
+          play()
+        });
+
+      },
+
+      _toggle: function() {
+        var main = this.querySelector('[main]')
+        var pip = this.querySelector('[pip]')
+
+        if(!main || !pip)
+          return
+
+        var playing = !main.paused
+
+        this.attributeFollows('main', pip, main)
+        this.attributeFollows('controls', pip, main)
+        this.attributeFollows('pip', main, pip)
+
+        var self = this;
+        EVENTS.forEach(function(event) {
+          main.removeEventListener(event, self.__handlers[event])
+          pip.addEventListener(event, self.__handlers[event])
+        })
+
+        if(playing) {
+          this.async(function() {
+            pip.currentTime = main.currentTime
+
+            main.play()
+            pip.play()
+          }, 1)
+        }
+      },
+
+      _onClick: function(e) {
+        var target = e.target
+        if(target.hasAttribute('pip'))
+          this._toggle()
+      },
+
+      _onSeeked: function(e) {
+        var main = this.querySelector('[main]')
+        var pip = this.querySelector('[pip]')
+
+        pip.currentTime = main.currentTime
+      },
+
+      _onPlay: function(e) {
+        var main = this.querySelector('[main]')
+        var pip = this.querySelector('[pip]')
+
+        pip.currentTime = main.currentTime
+        pip.play()
+
+        // _onPlay, _onPause의 모든 로직을 코멘트하고, 아래를 uncomment하는 방법도 가능하나,
+        // 브라우저들에서 잘 수행되지 않음.
+        // this._sync()
+      },
+
+      _onPause: function(e) {
+        var main = this.querySelector('[main]')
+        var pip = this.querySelector('[pip]')
+
+        pip.pause()
+        pip.currentTime = main.currentTime
+      },
+
+      _onCanplay: function(e) {
+        if(this.__canplay_count === undefined)
+          this.__canplay_count = 0
+
+        this.__canplay_count++
+        if(this.__canplay_count == 2) {
+          var main = this.querySelector('[main]')
+          main.setAttribute('controls', true);
+        }
+      }
+    });
+  </script>
+</dom-module>
+
