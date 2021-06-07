@@ -1,8 +1,8 @@
 {
   "name": "things-pip",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "authors": [
-    "Hatio Lab. <heartyoh@hatiolab.com>"
+    "Shenzhen Weixun"
   ],
   "description": "An element providing a solution to no problem in particular.",
   "keywords": [
@@ -11,8 +11,6 @@
     "seed"
   ],
   "main": "things-pip.html",
-  "license": "http://polymer.github.io/LICENSE.txt",
-  "homepage": "https://github.com/ThingsElements/things-pip/",
   "ignore": [
     "/.*",
     "/test/"
